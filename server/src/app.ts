@@ -31,13 +31,16 @@ const app = express();
  *
  * FRONTEND_URL=https://your-frontend-domain.com
  */
-const allowedOrigins = (
-  process.env.FRONTEND_URL ||
-  "http://localhost:5173"
-)
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://veda-ai-assessment-silk.vercel.app",
+  ...(process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean)
+    : []),
+];
 
 app.use(
   cors({
