@@ -14,88 +14,42 @@ interface GradingSummaryProps {
   grading: GradingResult | null;
 }
 
-/**
- * Complete AI grading summary.
- *
- * Displays:
- * - Overall score
- * - Percentage
- * - Answered / unanswered
- * - Correct / partially correct / incorrect
- * - AI confidence
- * - Overall feedback
- */
 export default function GradingSummary({
   grading,
 }: GradingSummaryProps) {
   /**
-   * Grading has not been generated yet.
+   * No grading generated yet.
    */
   if (!grading) {
     return (
-      <section
-        className="
-          w-full
-          min-w-0
-          rounded-xl
-          border
-          bg-white
-          p-4
-          shadow-sm
-          sm:p-5
-        "
-      >
-        <div
-          className="
-            flex
-            items-center
-            gap-2
-          "
-        >
-          <Sparkles
-            className="
-              h-5
-              w-5
-              shrink-0
-              text-slate-700
-            "
-          />
+      <section className="w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500 ring-1 ring-orange-100">
+            <Sparkles className="h-5 w-5" />
+          </div>
 
-          <h2
-            className="
-              text-base
-              font-semibold
-              text-slate-900
-            "
-          >
-            AI Assessment Grading
-          </h2>
+          <div>
+            <h2 className="text-sm font-bold text-slate-950">
+              AI Assessment Grading
+            </h2>
+
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Generate AI grading to see scores,
+              confidence and detailed feedback.
+            </p>
+          </div>
         </div>
-
-        <p
-          className="
-            mt-2
-            text-sm
-            leading-6
-            text-muted-foreground
-          "
-        >
-          Generate AI grading to see the
-          assessment statistics, scores,
-          confidence and feedback.
-        </p>
       </section>
     );
   }
 
   /**
-   * Calculate average AI confidence.
+   * Average confidence.
    */
   const confidenceValues =
     grading.questionResults
       .map(
-        (result) =>
-          result.confidence
+        (result) => result.confidence
       )
       .filter(
         (value) =>
@@ -109,8 +63,7 @@ export default function GradingSummary({
           (sum, value) =>
             sum + value,
           0
-        ) /
-        confidenceValues.length
+        ) / confidenceValues.length
       : 0;
 
   const confidencePercentage =
@@ -125,8 +78,7 @@ export default function GradingSummary({
     );
 
   /**
-   * Keep percentage inside
-   * the valid 0–100 range.
+   * Overall percentage.
    */
   const percentage = Math.round(
     Math.max(
@@ -139,8 +91,7 @@ export default function GradingSummary({
   );
 
   /**
-   * Calculate score percentage
-   * separately for the progress bar.
+   * Score percentage.
    */
   const scorePercentage =
     grading.maxScore > 0
@@ -158,428 +109,214 @@ export default function GradingSummary({
       : 0;
 
   return (
-    <section
-      className="
-        w-full
-        min-w-0
-        rounded-xl
-        border
-        bg-white
-        p-4
-        shadow-sm
-        sm:p-5
-      "
-    >
-      {/* =================================================
-          HEADER
-          ================================================= */}
+    <section className="w-full min-w-0 space-y-4">
+      {/* =====================================================
+          AI GRADING HEADER
+      ===================================================== */}
 
-      <div
-        className="
-          flex
-          min-w-0
-          items-center
-          gap-2
-        "
-      >
-        <Sparkles
-          className="
-            h-5
-            w-5
-            shrink-0
-            text-slate-700
-          "
-        />
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500 ring-1 ring-orange-100">
+            <Sparkles className="h-5 w-5" />
+          </div>
 
-        <div className="min-w-0">
-          <h2
-            className="
-              text-base
-              font-semibold
-              text-slate-900
-            "
-          >
-            AI Assessment Grading
-          </h2>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold text-slate-950">
+                AI Grading
+              </h2>
 
-          <p
-            className="
-              mt-0.5
-              text-xs
-              text-muted-foreground
-            "
-          >
-            Overall assessment performance
-          </p>
+              <span className="rounded-full bg-green-50 px-2 py-0.5 text-[9px] font-bold text-green-700 ring-1 ring-green-100">
+                Complete
+              </span>
+            </div>
+
+            <p className="mt-1 text-[11px] text-slate-400">
+              Overall assessment performance
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* =================================================
-          OVERALL SCORE
-          ================================================= */}
+      {/* =====================================================
+          SCORE CARD
+      ===================================================== */}
 
-      <div
-        className="
-          mt-5
-          rounded-xl
-          bg-slate-50
-          p-4
-          text-center
-          sm:p-5
-        "
-      >
-        <p
-          className="
-            text-xs
-            font-medium
-            uppercase
-            tracking-wide
-            text-muted-foreground
-          "
-        >
-          Overall Score
-        </p>
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+        <div className="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-orange-50" />
 
-        <div
-          className="
-            mt-1
-            flex
-            items-baseline
-            justify-center
-            gap-1
-          "
-        >
-          <span
-            className="
-              text-4xl
-              font-bold
-              tracking-tight
-              text-slate-900
-              sm:text-5xl
-            "
-          >
-            {grading.totalScore}
-          </span>
+        <div className="relative">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                Question Score
+              </p>
 
-          <span
-            className="
-              text-sm
-              text-muted-foreground
-              sm:text-base
-            "
-          >
-            / {grading.maxScore}
-          </span>
-        </div>
+              <div className="mt-2 flex items-baseline gap-1">
+                <span className="text-5xl font-bold tracking-[-0.04em] text-slate-950">
+                  {grading.totalScore}
+                </span>
 
-        <p
-          className="
-            mt-1
-            text-sm
-            font-medium
-            text-slate-600
-          "
-        >
-          {percentage}%
-        </p>
+                <span className="text-sm font-medium text-slate-400">
+                  / {grading.maxScore}
+                </span>
+              </div>
 
-        {/* Score progress */}
-        <div
-          className="
-            mx-auto
-            mt-4
-            h-2
-            w-full
-            max-w-sm
-            overflow-hidden
-            rounded-full
-            bg-slate-200
-          "
-        >
-          <div
-            className="
-              h-full
-              rounded-full
-              bg-slate-900
-              transition-all
-              duration-500
-            "
-            style={{
-              width:
-                `${scorePercentage}%`,
-            }}
-          />
+              <p className="mt-1 text-xs font-medium text-slate-500">
+                {percentage}% overall performance
+              </p>
+            </div>
+
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-50 text-green-600 ring-1 ring-green-100">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+          </div>
+
+          <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full bg-orange-500 transition-all duration-500"
+              style={{
+                width: `${scorePercentage}%`,
+              }}
+            />
+          </div>
         </div>
       </div>
 
-      {/* =================================================
-          STATISTICS
-          ================================================= */}
+      {/* =====================================================
+          QUICK STATISTICS
+      ===================================================== */}
 
-      <div
-        className="
-          mt-5
-          grid
-          grid-cols-2
-          gap-2.5
-          sm:grid-cols-2
-          sm:gap-3
-          lg:grid-cols-4
-        "
-      >
-        {/* Answered */}
+      <div className="grid grid-cols-2 gap-3">
         <StatCard
           icon={
-            <CheckCircle2
-              className="h-4 w-4"
-            />
+            <CheckCircle2 className="h-4 w-4" />
           }
           label="Answered"
-          value={
-            grading.answeredQuestions
-          }
+          value={grading.answeredQuestions}
+          iconClass="bg-green-50 text-green-600"
         />
 
-        {/* Unanswered */}
         <StatCard
           icon={
-            <CircleAlert
-              className="h-4 w-4"
-            />
+            <CircleAlert className="h-4 w-4" />
           }
           label="Unanswered"
-          value={
-            grading.unansweredQuestions
-          }
+          value={grading.unansweredQuestions}
+          iconClass="bg-orange-50 text-orange-500"
         />
 
-        {/* Correct */}
         <StatCard
           icon={
-            <CheckCircle2
-              className="h-4 w-4"
-            />
+            <CheckCircle2 className="h-4 w-4" />
           }
           label="Correct"
-          value={
-            grading.correctQuestions
-          }
+          value={grading.correctQuestions}
+          iconClass="bg-green-50 text-green-600"
         />
 
-        {/* Incorrect */}
         <StatCard
           icon={
-            <XCircle
-              className="h-4 w-4"
-            />
+            <XCircle className="h-4 w-4" />
           }
           label="Incorrect"
-          value={
-            grading.incorrectQuestions
-          }
+          value={grading.incorrectQuestions}
+          iconClass="bg-red-50 text-red-500"
         />
       </div>
 
-      {/* =================================================
+      {/* =====================================================
           PARTIALLY CORRECT
-          ================================================= */}
+      ===================================================== */}
 
-      <div
-        className="
-          mt-3
-          flex
-          items-center
-          justify-between
-          gap-3
-          rounded-lg
-          border
-          px-4
-          py-3
-        "
-      >
-        <div
-          className="
-            flex
-            min-w-0
-            items-center
-            gap-2
-          "
-        >
-          <MinusCircle
-            className="
-              h-4
-              w-4
-              shrink-0
-              text-slate-500
-            "
-          />
+      <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3.5 shadow-[0_4px_18px_rgba(15,23,42,0.03)]">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-500">
+            <MinusCircle className="h-4 w-4" />
+          </div>
 
-          <span
-            className="
-              truncate
-              text-sm
-              text-slate-700
-            "
-          >
-            Partially Correct
-          </span>
+          <div>
+            <p className="text-xs font-semibold text-slate-700">
+              Partially Correct
+            </p>
+
+            <p className="mt-0.5 text-[10px] text-slate-400">
+              Needs some improvement
+            </p>
+          </div>
         </div>
 
-        <span
-          className="
-            shrink-0
-            font-semibold
-            text-slate-900
-          "
-        >
-          {
-            grading.partiallyCorrectQuestions
-          }
+        <span className="text-lg font-bold text-slate-950">
+          {grading.partiallyCorrectQuestions}
         </span>
       </div>
 
-      {/* =================================================
+      {/* =====================================================
           AI CONFIDENCE
-          ================================================= */}
+      ===================================================== */}
 
-      <div
-        className="
-          mt-5
-          rounded-xl
-          border
-          bg-slate-50
-          p-4
-        "
-      >
-        <div
-          className="
-            flex
-            items-center
-            justify-between
-            gap-3
-          "
-        >
-          <div className="min-w-0">
-            <span
-              className="
-                text-sm
-                font-medium
-                text-slate-700
-              "
-            >
-              AI Confidence
-            </span>
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-500 ring-1 ring-orange-100">
+              <Sparkles className="h-4 w-4" />
+            </div>
 
-            <p
-              className="
-                mt-0.5
-                text-xs
-                text-muted-foreground
-              "
-            >
-              Average confidence across
-              evaluated questions
-            </p>
+            <div>
+              <p className="text-xs font-bold text-slate-800">
+                AI Confidence
+              </p>
+
+              <p className="mt-0.5 text-[10px] text-slate-400">
+                Average confidence across answers
+              </p>
+            </div>
           </div>
 
-          <span
-            className="
-              shrink-0
-              text-sm
-              font-semibold
-              text-slate-900
-            "
-          >
+          <span className="text-lg font-bold text-slate-950">
             {confidencePercentage}%
           </span>
         </div>
 
-        <div
-          className="
-            mt-3
-            h-2
-            w-full
-            overflow-hidden
-            rounded-full
-            bg-slate-200
-          "
-        >
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
           <div
-            className="
-              h-full
-              rounded-full
-              bg-slate-900
-              transition-all
-              duration-500
-            "
+            className="h-full rounded-full bg-orange-500 transition-all duration-500"
             style={{
-              width:
-                `${confidencePercentage}%`,
+              width: `${confidencePercentage}%`,
             }}
           />
         </div>
+
+        <div className="mt-2 flex justify-between text-[9px] font-medium text-slate-400">
+          <span>Low confidence</span>
+          <span>High confidence</span>
+        </div>
       </div>
 
-      {/* =================================================
+      {/* =====================================================
           OVERALL FEEDBACK
-          ================================================= */}
+      ===================================================== */}
 
       {grading.overallFeedback && (
-        <div
-          className="
-            mt-5
-            min-w-0
-            rounded-xl
-            border
-            bg-slate-50
-            p-4
-            sm:p-5
-          "
-        >
-          <div
-            className="
-              flex
-              items-center
-              gap-2
-            "
-          >
-            <Sparkles
-              className="
-                h-4
-                w-4
-                shrink-0
-                text-slate-700
-              "
-            />
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500 ring-1 ring-orange-100">
+              <Sparkles className="h-4 w-4" />
+            </div>
 
-            <h3
-              className="
-                text-sm
-                font-semibold
-                text-slate-900
-              "
-            >
-              Overall AI Feedback
-            </h3>
+            <div>
+              <h3 className="text-xs font-bold text-slate-900">
+                Overall AI Feedback
+              </h3>
+
+              <p className="mt-0.5 text-[10px] text-slate-400">
+                Summary of assessment performance
+              </p>
+            </div>
           </div>
 
-          <div
-            className="
-              mt-3
-              max-h-87.5
-              overflow-y-auto
-              overflow-x-hidden
-            "
-          >
-            <p
-              className="
-                whitespace-pre-wrap
-                wrap-break-word
-                text-sm
-                leading-6
-                text-slate-700
-              "
-            >
+          <div className="mt-4 rounded-xl bg-slate-50 p-4">
+            <p className="whitespace-pre-wrap wrap-break-word text-xs leading-6 text-slate-600">
               {grading.overallFeedback}
             </p>
           </div>
@@ -590,63 +327,38 @@ export default function GradingSummary({
 }
 
 /**
- * Small reusable statistics card.
+ * =========================================================
+ * STAT CARD
+ * =========================================================
  */
+
 function StatCard({
   icon,
   label,
   value,
+  iconClass,
 }: {
   icon: React.ReactNode;
   label: string;
   value: number;
+  iconClass: string;
 }) {
   return (
-    <div
-      className="
-        min-w-0
-        rounded-lg
-        border
-        p-3
-      "
-    >
-      <div
-        className="
-          flex
-          min-w-0
-          items-center
-          gap-2
-        "
-      >
+    <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_4px_18px_rgba(15,23,42,0.03)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+      <div className="flex items-center justify-between gap-2">
         <span
-          className="
-            shrink-0
-            text-slate-500
-          "
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${iconClass}`}
         >
           {icon}
         </span>
 
-        <span
-          className="
-            truncate
-            text-xs
-            text-muted-foreground
-          "
-        >
-          {label}
+        <span className="text-xl font-bold text-slate-950">
+          {value}
         </span>
       </div>
 
-      <p
-        className="
-          mt-2
-          text-xl
-          font-semibold
-          text-slate-900
-        "
-      >
-        {value}
+      <p className="mt-3 truncate text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+        {label}
       </p>
     </div>
   );

@@ -17,13 +17,13 @@ import PdfPage from "./PdfPage";
 
 /**
  * PDF.js worker.
- *
- * The worker version must match the installed
- * pdfjs-dist version.
  */
 pdfjs.GlobalWorkerOptions.workerSrc =
   "/pdf.worker.min.mjs";
 
+/**
+ * Props accepted by the viewer.
+ */
 interface PdfViewerProps {
   file: File;
   regions: AnswerRegion[];
@@ -31,9 +31,11 @@ interface PdfViewerProps {
 }
 
 /**
- * Supported image formats.
+ * Check whether the uploaded file is an image.
  */
-function isImageFile(file: File): boolean {
+function isImageFile(
+  file: File
+): boolean {
   if (file.type.startsWith("image/")) {
     return true;
   }
@@ -50,11 +52,7 @@ function isImageFile(file: File): boolean {
 }
 
 /**
- * Safely read a numeric property from
- * an answer region.
- *
- * This keeps this component compatible
- * with slightly different region schemas.
+ * Safely convert a value to a number.
  */
 function getNumber(
   value: unknown
@@ -65,35 +63,7 @@ function getNumber(
 }
 
 /**
- * Extract bounding-box information from
- * a region without assuming a specific
- * TypeScript schema.
- *
- * Supported forms:
- *
- * {
- *   x,
- *   y,
- *   width,
- *   height
- * }
- *
- * or
- *
- * {
- *   bbox: [x, y, width, height]
- * }
- *
- * or
- *
- * {
- *   bbox: {
- *     x,
- *     y,
- *     width,
- *     height
- *   }
- * }
+ * Extract bounding box information.
  */
 function getRegionBox(
   region: AnswerRegion
@@ -104,6 +74,16 @@ function getRegionBox(
       unknown
     >;
 
+  /**
+   * Direct format:
+   *
+   * {
+   *   x,
+   *   y,
+   *   width,
+   *   height
+   * }
+   */
   const directX =
     getNumber(raw.x);
 
@@ -133,6 +113,11 @@ function getRegionBox(
   const bbox =
     raw.bbox;
 
+  /**
+   * Array format:
+   *
+   * [x, y, width, height]
+   */
   if (Array.isArray(bbox)) {
     const [
       x,
@@ -156,6 +141,16 @@ function getRegionBox(
     }
   }
 
+  /**
+   * Object format:
+   *
+   * {
+   *   x,
+   *   y,
+   *   width,
+   *   height
+   * }
+   */
   if (
     bbox &&
     typeof bbox === "object"
@@ -196,16 +191,28 @@ function getRegionBox(
   return null;
 }
 
+/**
+ * Keep zoom between 50% and 200%.
+ */
+function clampZoom(
+  value: number
+) {
+  return Math.min(
+    2,
+    Math.max(0.5, value)
+  );
+}
+
+/**
+ * Main PDF / Image viewer.
+ */
 export default function PdfViewer({
   file,
   regions,
   selectedPage,
 }: PdfViewerProps) {
   /**
-   * Number of pages.
-   *
-   * PDFs can have multiple pages.
-   * Images are treated as one page.
+   * Number of PDF pages.
    */
   const [
     numPages,
@@ -213,13 +220,7 @@ export default function PdfViewer({
   ] = useState(0);
 
   /**
-   * Object URL for either:
-   *
-   * PDF
-   * JPG
-   * JPEG
-   * PNG
-   * WEBP
+   * Uploaded file object URL.
    */
   const [
     fileUrl,
@@ -229,7 +230,7 @@ export default function PdfViewer({
   );
 
   /**
-   * Width of the center viewer.
+   * Available viewer width.
    */
   const [
     containerWidth,
@@ -237,7 +238,21 @@ export default function PdfViewer({
   ] = useState(0);
 
   /**
-   * Reference to viewer container.
+   * Zoom level.
+   *
+   * 1 = 100%
+   * 1.25 = 125%
+   * 1.5 = 150%
+   * 1.75 = 175%
+   * 2 = 200%
+   */
+  const [
+    zoom,
+    setZoom,
+  ] = useState(1);
+
+  /**
+   * Scrollable viewer container.
    */
   const containerRef =
     useRef<HTMLDivElement | null>(
@@ -245,7 +260,7 @@ export default function PdfViewer({
     );
 
   /**
-   * References to individual pages.
+   * Individual page references.
    */
   const pageRefs =
     useRef<
@@ -256,14 +271,13 @@ export default function PdfViewer({
     >({});
 
   /**
-   * Determine whether the current
-   * file is an image.
+   * Determine image/PDF type.
    */
   const imageFile =
     isImageFile(file);
 
   /**
-   * Create object URL whenever
+   * Create file URL whenever
    * the uploaded file changes.
    */
   useEffect(() => {
@@ -273,10 +287,13 @@ export default function PdfViewer({
     setFileUrl(url);
 
     /**
-     * Images only have one page.
-     *
-     * PDF page count will be updated
-     * by react-pdf.
+     * Reset zoom whenever
+     * a new document is loaded.
+     */
+    setZoom(1);
+
+    /**
+     * Images only contain one page.
      */
     if (imageFile) {
       setNumPages(1);
@@ -293,10 +310,8 @@ export default function PdfViewer({
   ]);
 
   /**
-   * Observe viewer width.
-   *
-   * This makes both PDF and image
-   * rendering responsive.
+   * Observe the available
+   * width of the viewer.
    */
   useEffect(() => {
     const element =
@@ -313,15 +328,11 @@ export default function PdfViewer({
             entries[0]
               ?.contentRect.width ?? 0;
 
-          setContainerWidth(
-            width
-          );
+          setContainerWidth(width);
         }
       );
 
-    observer.observe(
-      element
-    );
+    observer.observe(element);
 
     return () => {
       observer.disconnect();
@@ -329,16 +340,68 @@ export default function PdfViewer({
   }, []);
 
   /**
-   * PDF page width.
+   * At 100%, the page fits inside
+   * the available viewer width.
+   *
+   * Padding is removed from the
+   * calculation so the page does not
+   * accidentally overflow at 100%.
    */
-  const pageWidth =
+  const availableWidth =
     Math.max(
       280,
       containerWidth - 48
     );
 
   /**
-   * Navigate to selected page.
+   * Actual document width after zoom.
+   */
+  const pageWidth =
+    availableWidth * zoom;
+
+  /**
+   * Increase zoom by 25%.
+   */
+  const zoomIn = () => {
+    setZoom((current) =>
+      clampZoom(
+        Math.round(
+          (current + 0.25) * 100
+        ) / 100
+      )
+    );
+  };
+
+  /**
+   * Decrease zoom by 25%.
+   */
+  const zoomOut = () => {
+    setZoom((current) =>
+      clampZoom(
+        Math.round(
+          (current - 0.25) * 100
+        ) / 100
+      )
+    );
+  };
+
+  /**
+   * Reset to 100%.
+   */
+  const resetZoom = () => {
+    setZoom(1);
+  };
+
+  /**
+   * When a question is selected,
+   * move the corresponding page
+   * into view.
+   *
+   * `inline: "nearest"` is important.
+   *
+   * It prevents the browser from
+   * unnecessarily moving the document
+   * horizontally when selecting a page.
    */
   useEffect(() => {
     const element =
@@ -353,6 +416,7 @@ export default function PdfViewer({
     element.scrollIntoView({
       behavior: "smooth",
       block: "center",
+      inline: "nearest",
     });
   }, [
     selectedPage,
@@ -376,9 +440,7 @@ export default function PdfViewer({
         region.page
       ) ?? [];
 
-    existing.push(
-      region
-    );
+    existing.push(region);
 
     regionsByPage.set(
       region.page,
@@ -387,294 +449,596 @@ export default function PdfViewer({
   }
 
   /**
-   * ------------------------------------------------
+   * ========================================================
+   * TOOLBAR
+   * ========================================================
+   */
+  const viewerToolbar = (
+    <div
+      className="
+        sticky
+        top-0
+        z-50
+        flex
+        h-14
+        shrink-0
+        items-center
+        justify-between
+        border-b
+        border-slate-700
+        bg-slate-900
+        px-4
+        shadow-md
+      "
+    >
+      {/* Left side */}
+      <div
+        className="
+          min-w-0
+          text-sm
+          font-semibold
+          text-white
+        "
+      >
+        Answer Sheet
+      </div>
+
+      {/* Zoom controls */}
+      <div
+        className="
+          flex
+          shrink-0
+          items-center
+          gap-1
+          rounded-lg
+          bg-slate-800
+          p-1
+        "
+      >
+        {/* Minus */}
+        <button
+          type="button"
+          onClick={zoomOut}
+          disabled={zoom <= 0.5}
+          aria-label="Zoom out"
+          title="Zoom out"
+          className="
+            flex
+            h-8
+            w-8
+            items-center
+            justify-center
+            rounded-md
+            text-lg
+            font-medium
+            text-white
+            transition
+            hover:bg-slate-700
+            disabled:cursor-not-allowed
+            disabled:opacity-40
+          "
+        >
+          −
+        </button>
+
+        {/* Percentage */}
+        <button
+          type="button"
+          onClick={resetZoom}
+          aria-label="Reset zoom"
+          title="Reset zoom to 100%"
+          className="
+            min-w-16
+            rounded-md
+            px-2
+            py-1.5
+            text-sm
+            font-semibold
+            text-white
+            transition
+            hover:bg-slate-700
+          "
+        >
+          {Math.round(
+            zoom * 100
+          )}
+          %
+        </button>
+
+        {/* Plus */}
+        <button
+          type="button"
+          onClick={zoomIn}
+          disabled={zoom >= 2}
+          aria-label="Zoom in"
+          title="Zoom in"
+          className="
+            flex
+            h-8
+            w-8
+            items-center
+            justify-center
+            rounded-md
+            text-lg
+            font-medium
+            text-white
+            transition
+            hover:bg-slate-700
+            disabled:cursor-not-allowed
+            disabled:opacity-40
+          "
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+
+  /**
+   * ========================================================
    * IMAGE VIEWER
-   * ------------------------------------------------
-   *
-   * JPG / JPEG / PNG / WEBP
+   * ========================================================
    */
   if (imageFile) {
     return (
       <div
         ref={containerRef}
         className="
+          flex
           h-full
-          min-w-0
           min-h-0
-          overflow-y-auto
-          overflow-x-hidden
-          bg-slate-100
-          p-6
+          min-w-0
+          flex-col
+          overflow-hidden
+          bg-slate-100/80
         "
       >
-        {!fileUrl && (
-          <div className="flex min-h-64 items-center justify-center">
-            <p className="text-sm text-slate-500">
-              Preparing answer sheet...
-            </p>
-          </div>
-        )}
+        {viewerToolbar}
 
-        {fileUrl && (
+        {/* 
+          IMPORTANT:
+          This is the actual scroll container.
+
+          The inner wrapper uses max-content
+          so zoomed content can be scrolled
+          from BOTH left and right.
+        */}
+        <div
+          className="
+            min-h-0
+            min-w-0
+            flex-1
+            overflow-auto
+          "
+        >
           <div
-            ref={(element) => {
-              pageRefs.current[1] =
-                element;
-            }}
             className="
+              box-border
               flex
-              w-full
-              justify-center
-              pb-8
+              min-h-full
+              w-max
+              min-w-full
+              justify-start
+              p-4
+              sm:p-6
             "
           >
-            <div
-              className="
-                relative
-                inline-block
-                max-w-full
-                overflow-hidden
-                bg-white
-                shadow-sm
-              "
-            >
-              <img
-                src={fileUrl}
-                alt="Answer sheet"
+            {!fileUrl && (
+              <div
                 className="
-                  block
-                  h-auto
-                  max-w-full
-                  object-contain
+                  flex
+                  min-h-64
+                  w-full
+                  items-center
+                  justify-center
+                "
+              >
+                <div
+                  className="
+                    rounded-xl
+                    border
+                    border-slate-200
+                    bg-white
+                    px-5
+                    py-4
+                    text-center
+                    shadow-sm
+                  "
+                >
+                  <p
+                    className="
+                      text-sm
+                      font-medium
+                      text-slate-700
+                    "
+                  >
+                    Preparing answer sheet...
+                  </p>
+
+                  <p
+                    className="
+                      mt-1
+                      text-xs
+                      text-slate-400
+                    "
+                  >
+                    Loading your document
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {fileUrl && (
+              <div
+                ref={(element) => {
+                  pageRefs.current[1] =
+                    element;
+                }}
+                className="
+                  relative
+                  shrink-0
+                  pb-10
                 "
                 style={{
-                  width:
-                    containerWidth > 48
-                      ? Math.min(
-                          containerWidth - 48,
-                          1200
-                        )
-                      : undefined,
+                  width: pageWidth,
+                  marginLeft:
+                    pageWidth <
+                    availableWidth
+                      ? "auto"
+                      : 0,
+                  marginRight:
+                    pageWidth <
+                    availableWidth
+                      ? "auto"
+                      : 0,
                 }}
-                onError={(error) => {
-                  console.error(
-                    "Image loading error:",
-                    error
-                  );
-                }}
-              />
+              >
+                <div
+                  className="
+                    relative
+                    w-full
+                    overflow-hidden
+                    rounded-sm
+                    bg-white
+                    shadow-[0_8px_30px_rgba(15,23,42,0.10)]
+                    ring-1
+                    ring-slate-200
+                  "
+                >
+                  <img
+                    src={fileUrl}
+                    alt="Answer sheet"
+                    className="
+                      block
+                      h-auto
+                      w-full
+                      object-contain
+                    "
+                  />
 
-              {/**
-               * Answer-region highlighting.
-               *
-               * The overlay is intentionally
-               * defensive because different
-               * extraction versions may use
-               * different bounding-box shapes.
-               */}
-              {(
-                regionsByPage.get(
-                  1
-                ) ?? []
-              ).map(
-                (
-                  region,
-                  index
-                ) => {
-                  const box =
-                    getRegionBox(
-                      region
-                    );
+                  {(
+                    regionsByPage.get(
+                      1
+                    ) ?? []
+                  ).map(
+                    (
+                      region,
+                      index
+                    ) => {
+                      const box =
+                        getRegionBox(
+                          region
+                        );
 
-                  if (!box) {
-                    return null;
-                  }
-
-                  /**
-                   * If coordinates are between
-                   * 0 and 1, treat them as
-                   * normalized coordinates.
-                   *
-                   * Otherwise use pixel-like
-                   * coordinates.
-                   */
-                  const normalized =
-                    box.x >= 0 &&
-                    box.x <= 1 &&
-                    box.y >= 0 &&
-                    box.y <= 1 &&
-                    box.width >= 0 &&
-                    box.width <= 1 &&
-                    box.height >= 0 &&
-                    box.height <= 1;
-
-                  return (
-                    <div
-                      key={
-                        `region-${index}`
+                      if (!box) {
+                        return null;
                       }
-                      className="
-                        pointer-events-none
-                        absolute
-                        rounded-sm
-                        border-2
-                        border-blue-500
-                        bg-blue-500/10
-                      "
-                      style={
-                        normalized
-                          ? {
-                              left:
-                                `${box.x * 100}%`,
-                              top:
-                                `${box.y * 100}%`,
-                              width:
-                                `${box.width * 100}%`,
-                              height:
-                                `${box.height * 100}%`,
-                            }
-                          : {
-                              left:
-                                box.x,
-                              top:
-                                box.y,
-                              width:
-                                box.width,
-                              height:
-                                box.height,
-                            }
-                      }
-                    />
-                  );
-                }
-              )}
-            </div>
-          </div>
-        )}
 
-        {!fileUrl && (
-          <div className="flex min-h-64 items-center justify-center">
-            <p className="text-sm text-slate-500">
-              Loading answer sheet...
-            </p>
+                      const normalized =
+                        box.x >= 0 &&
+                        box.x <= 1 &&
+                        box.y >= 0 &&
+                        box.y <= 1 &&
+                        box.width >= 0 &&
+                        box.width <= 1 &&
+                        box.height >= 0 &&
+                        box.height <= 1;
+
+                      return (
+                        <div
+                          key={`region-${index}`}
+                          className="
+                            pointer-events-none
+                            absolute
+                            rounded-sm
+                            border-2
+                            border-blue-500
+                            bg-blue-500/10
+                          "
+                          style={
+                            normalized
+                              ? {
+                                  left:
+                                    `${box.x * 100}%`,
+                                  top:
+                                    `${box.y * 100}%`,
+                                  width:
+                                    `${box.width * 100}%`,
+                                  height:
+                                    `${box.height * 100}%`,
+                                }
+                              : {
+                                  left:
+                                    box.x,
+                                  top:
+                                    box.y,
+                                  width:
+                                    box.width,
+                                  height:
+                                    box.height,
+                                }
+                          }
+                        />
+                      );
+                    }
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     );
   }
 
   /**
-   * ------------------------------------------------
+   * ========================================================
    * PDF VIEWER
-   * ------------------------------------------------
+   * ========================================================
    */
   return (
     <div
       ref={containerRef}
       className="
+        flex
         h-full
-        min-w-0
         min-h-0
-        overflow-y-auto
-        overflow-x-hidden
-        bg-slate-100
-        p-6
+        min-w-0
+        flex-col
+        overflow-hidden
+        bg-slate-100/80
       "
     >
-      {!fileUrl && (
-        <div className="flex min-h-64 items-center justify-center">
-          <p className="text-sm text-slate-500">
-            Preparing answer sheet...
-          </p>
-        </div>
-      )}
+      {viewerToolbar}
 
-      {fileUrl && (
-        <Document
-          file={fileUrl}
+      {/* 
+        ACTUAL SCROLL CONTAINER
 
-          onLoadSuccess={({
-            numPages,
-          }) => {
-            console.log(
-              "Answer sheet loaded successfully:",
-              numPages
-            );
+        This is the key fix.
 
-            setNumPages(
-              numPages
-            );
-          }}
+        `overflow-auto` allows:
+        - horizontal scrolling
+        - vertical scrolling
+      */}
+      <div
+        className="
+          min-h-0
+          min-w-0
+          flex-1
+          overflow-auto
+        "
+      >
+        {/* 
+          This wrapper is intentionally `w-max`.
 
-          onLoadError={(error) => {
-            console.error(
-              "PDF loading error:",
-              error
-            );
-          }}
+          When the PDF becomes larger than
+          the viewport, the wrapper grows with
+          the PDF instead of clipping it.
 
-          loading={
-            <div className="flex min-h-64 items-center justify-center">
-              <p className="text-sm text-slate-500">
-                Loading answer sheet...
-              </p>
-            </div>
-          }
-
-          error={
-            <div className="flex min-h-64 flex-col items-center justify-center gap-2">
-              <p className="font-medium text-red-500">
-                Failed to load answer sheet.
-              </p>
-
-              <p className="text-xs text-slate-500">
-                Check the browser console.
-              </p>
-            </div>
-          }
+          `min-w-full` keeps 100% zoom centered.
+        */}
+        <div
+          className="
+            box-border
+            flex
+            min-h-full
+            w-max
+            min-w-full
+            flex-col
+            items-start
+            p-4
+            sm:p-6
+          "
         >
-          {Array.from(
-            {
-              length: numPages,
-            },
-            (_, index) => {
-              const pageNumber =
-                index + 1;
-
-              return (
-                <PdfPage
-                  key={
-                    pageNumber
-                  }
-
-                  pageNumber={
-                    pageNumber
-                  }
-
-                  width={
-                    pageWidth
-                  }
-
-                  regions={
-                    regionsByPage.get(
-                      pageNumber
-                    ) ?? []
-                  }
-
-                  pageRef={(
-                    element
-                  ) => {
-                    pageRefs.current[
-                      pageNumber
-                    ] =
-                      element;
-                  }}
-                />
-              );
-            }
+          {!fileUrl && (
+            <div
+              className="
+                flex
+                min-h-64
+                w-full
+                items-center
+                justify-center
+              "
+            >
+              <p
+                className="
+                  text-sm
+                  text-slate-500
+                "
+              >
+                Preparing answer sheet...
+              </p>
+            </div>
           )}
-        </Document>
-      )}
+
+          {fileUrl && (
+            <Document
+              file={fileUrl}
+              onLoadSuccess={({
+                numPages,
+              }) => {
+                console.log(
+                  "Answer sheet loaded successfully:",
+                  numPages
+                );
+
+                setNumPages(
+                  numPages
+                );
+              }}
+              onLoadError={(error) => {
+                console.error(
+                  "PDF loading error:",
+                  error
+                );
+              }}
+              loading={
+                <div
+                  className="
+                    flex
+                    min-h-64
+                    w-full
+                    items-center
+                    justify-center
+                  "
+                >
+                  <p
+                    className="
+                      text-sm
+                      text-slate-500
+                    "
+                  >
+                    Loading answer sheet...
+                  </p>
+                </div>
+              }
+              error={
+                <div
+                  className="
+                    flex
+                    min-h-64
+                    w-full
+                    items-center
+                    justify-center
+                    px-6
+                  "
+                >
+                  <div
+                    className="
+                      rounded-xl
+                      border
+                      border-red-200
+                      bg-white
+                      px-6
+                      py-5
+                      text-center
+                      shadow-sm
+                    "
+                  >
+                    <p
+                      className="
+                        font-semibold
+                        text-red-600
+                      "
+                    >
+                      Failed to load answer sheet.
+                    </p>
+
+                    <p
+                      className="
+                        mt-1
+                        text-xs
+                        text-slate-500
+                      "
+                    >
+                      Check the browser console.
+                    </p>
+                  </div>
+                </div>
+              }
+            >
+              {Array.from(
+                {
+                  length: numPages,
+                },
+                (_, index) => {
+                  const pageNumber =
+                    index + 1;
+
+                  /**
+                   * At 100%:
+                   * center the page.
+                   *
+                   * When zoomed:
+                   * keep the page starting
+                   * from the left so the
+                   * entire page remains
+                   * horizontally reachable.
+                   */
+                  const isZoomed =
+                    pageWidth >
+                    availableWidth;
+
+                  return (
+                    <div
+                      key={`page-shell-${pageNumber}`}
+                      ref={(element) => {
+                        pageRefs.current[
+                          pageNumber
+                        ] = element;
+                      }}
+                      className="
+                        mb-5
+                        shrink-0
+                        last:mb-0
+                      "
+                      style={{
+                        width:
+                          pageWidth,
+
+                        /**
+                         * Center only when
+                         * the page fits.
+                         */
+                        marginLeft:
+                          isZoomed
+                            ? 0
+                            : "auto",
+
+                        marginRight:
+                          isZoomed
+                            ? 0
+                            : "auto",
+                      }}
+                    >
+                      <PdfPage
+                        pageNumber={
+                          pageNumber
+                        }
+                        width={
+                          pageWidth
+                        }
+                        regions={
+                          regionsByPage.get(
+                            pageNumber
+                          ) ?? []
+                        }
+                        pageRef={(
+                          element
+                        ) => {
+                          pageRefs.current[
+                            pageNumber
+                          ] = element;
+                        }}
+                      />
+                    </div>
+                  );
+                }
+              )}
+            </Document>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

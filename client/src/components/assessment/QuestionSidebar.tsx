@@ -1,11 +1,8 @@
 import {
   CheckCircle2,
   CircleAlert,
+  FileText,
 } from "lucide-react";
-
-import {
-  Badge,
-} from "@/components/ui/badge";
 
 import type {
   QuestionAnswerMapping,
@@ -21,17 +18,6 @@ interface QuestionSidebarProps {
   ) => void;
 }
 
-/**
- * Left-side question navigation.
- *
- * Phase 8 improvements:
- * - Proper scrolling
- * - Responsive width
- * - Empty state
- * - Better selected state
- * - Answered/unanswered statistics
- * - Better touch targets
- */
 export default function QuestionSidebar({
   mappings,
   selectedQuestion,
@@ -44,375 +30,244 @@ export default function QuestionSidebar({
     ).length;
 
   const unansweredCount =
-    mappings.length -
-    answeredCount;
+    mappings.length - answeredCount;
+
+  const progress =
+    mappings.length > 0
+      ? Math.round(
+          (answeredCount /
+            mappings.length) *
+            100
+        )
+      : 0;
 
   return (
-    <aside
-      className="
-        flex
-        h-full
-        min-h-0
-        min-w-0
-        w-full
-        flex-col
-        overflow-hidden
-        bg-white
-      "
-    >
-      {/* =================================================
+    <aside className="flex h-full min-h-0 min-w-0 w-full flex-col overflow-hidden bg-white">
+      {/* =========================================
           HEADER
-          ================================================= */}
-
-      <div
-        className="
-          shrink-0
-          border-b
-          px-4
-          py-3
-          sm:px-5
-          sm:py-4
-        "
-      >
-        <div
-          className="
-            flex
-            items-start
-            justify-between
-            gap-3
-          "
-        >
+      ========================================== */}
+      <div className="shrink-0 border-b border-slate-100 px-4 py-4 sm:px-5">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2
-              className="
-                text-base
-                font-semibold
-                text-slate-900
-                sm:text-lg
-              "
-            >
-              Questions
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold tracking-tight text-slate-950">
+                Questions
+              </h2>
 
-            <p
-              className="
-                mt-1
-                text-xs
-                leading-5
-                text-muted-foreground
-                sm:text-sm
-              "
-            >
-              Select a question to
-              view its answer.
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold text-slate-500">
+                {mappings.length}
+              </span>
+            </div>
+
+            <p className="mt-1 text-[10px] leading-4 text-slate-400">
+              Select a question to review
             </p>
           </div>
 
-          {/* Question count */}
-          <Badge
-            variant="secondary"
-            className="shrink-0"
-          >
-            {mappings.length}
-          </Badge>
+          <div className="shrink-0 text-right">
+            <p className="text-[11px] font-bold text-orange-500">
+              {progress}%
+            </p>
+
+            <p className="mt-0.5 text-[8px] font-semibold uppercase tracking-[0.1em] text-slate-400">
+              complete
+            </p>
+          </div>
         </div>
 
-        {/* Quick statistics */}
-        <div
-          className="
-            mt-3
-            flex
-            flex-wrap
-            items-center
-            gap-2
-          "
-        >
+        {/* Progress */}
+        <div className="mt-3 h-1 overflow-hidden rounded-full bg-slate-100">
           <div
-            className="
-              flex
-              items-center
-              gap-1.5
-              rounded-md
-              bg-green-50
-              px-2
-              py-1
-              text-xs
-              text-green-700
-            "
-          >
-            <CheckCircle2
-              className="
-                h-3.5
-                w-3.5
-              "
-            />
+            className="h-full rounded-full bg-orange-500 transition-all duration-300"
+            style={{
+              width: `${progress}%`,
+            }}
+          />
+        </div>
+
+        {/* Statistics */}
+        <div className="mt-3 flex items-center gap-2">
+          <div className="flex items-center gap-1.5 rounded-lg bg-green-50 px-2 py-1.5 text-[9px] font-semibold text-green-700">
+            <CheckCircle2 className="h-3 w-3" />
 
             <span>
               {answeredCount} answered
             </span>
           </div>
 
-          <div
-            className="
-              flex
-              items-center
-              gap-1.5
-              rounded-md
-              bg-orange-50
-              px-2
-              py-1
-              text-xs
-              text-orange-700
-            "
-          >
-            <CircleAlert
-              className="
-                h-3.5
-                w-3.5
-              "
-            />
+          <div className="flex items-center gap-1.5 rounded-lg bg-orange-50 px-2 py-1.5 text-[9px] font-semibold text-orange-600">
+            <CircleAlert className="h-3 w-3" />
 
             <span>
-              {unansweredCount} unanswered
+              {unansweredCount} pending
             </span>
           </div>
         </div>
       </div>
 
-      {/* =================================================
-          SCROLLABLE QUESTION LIST
-          ================================================= */}
-
-      <div
-        className="
-          min-h-0
-          flex-1
-          overflow-y-auto
-          overflow-x-hidden
-          overscroll-contain
-          p-2.5
-          sm:p-3
-        "
-      >
+      {/* =========================================
+          QUESTION LIST
+      ========================================== */}
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain p-2.5 sm:p-3">
         {mappings.length === 0 ? (
-          /* ---------------------------------------------
-             EMPTY STATE
-             --------------------------------------------- */
-
-          <div
-            className="
-              flex
-              min-h-40
-              flex-col
-              items-center
-              justify-center
-              px-5
-              text-center
-            "
-          >
-            <div
-              className="
-                flex
-                h-10
-                w-10
-                items-center
-                justify-center
-                rounded-full
-                bg-slate-100
-              "
-            >
-              <FileTextIcon />
+          <div className="flex min-h-48 flex-col items-center justify-center px-5 text-center">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <FileText className="h-5 w-5" />
             </div>
 
-            <p
-              className="
-                mt-3
-                text-sm
-                font-medium
-                text-slate-800
-              "
-            >
+            <p className="mt-3 text-xs font-bold text-slate-800">
               No questions found
             </p>
 
-            <p
-              className="
-                mt-1
-                text-xs
-                leading-5
-                text-slate-500
-              "
-            >
+            <p className="mt-1 max-w-[210px] text-[10px] leading-5 text-slate-400">
               No extracted questions are
               available for this assessment.
             </p>
           </div>
         ) : (
-          mappings.map(
-            (mapping) => {
-              const isSelected =
-                mapping.questionNumber ===
-                selectedQuestion;
+          mappings.map((mapping) => {
+            const isSelected =
+              mapping.questionNumber ===
+              selectedQuestion;
 
-              const isAnswered =
-                mapping.status ===
-                "answered";
+            const isAnswered =
+              mapping.status ===
+              "answered";
 
-              return (
-                <button
-                  key={
+            return (
+              <button
+                key={mapping.questionNumber}
+                type="button"
+                onClick={() =>
+                  onSelectQuestion(
                     mapping.questionNumber
-                  }
-                  type="button"
-                  onClick={() =>
-                    onSelectQuestion(
-                      mapping.questionNumber
-                    )
-                  }
-                  aria-current={
+                  )
+                }
+                aria-current={
+                  isSelected
+                    ? "true"
+                    : undefined
+                }
+                className={`
+                  group relative mb-1.5 flex
+                  min-h-12 w-full min-w-0
+                  items-center gap-2.5
+                  overflow-hidden rounded-xl
+                  border p-2.5 text-left
+                  transition-all duration-150
+                  last:mb-0
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-orange-400
+                  focus-visible:ring-offset-1
+                  active:scale-[0.99]
+
+                  ${
                     isSelected
-                      ? "true"
-                      : undefined
+                      ? "border-orange-200 bg-orange-50/70 shadow-[0_3px_12px_rgba(249,115,22,0.08)]"
+                      : "border-transparent hover:border-slate-200 hover:bg-slate-50"
                   }
+                `}
+              >
+                {/* Selected indicator */}
+                {isSelected && (
+                  <span className="absolute bottom-2 left-0 top-2 w-0.5 rounded-r-full bg-orange-500" />
+                )}
+
+                {/* Status icon */}
+                <div
                   className={`
-                    mb-2
-                    flex
-                    min-h-12
-                    w-full
-                    min-w-0
-                    items-center
-                    gap-2.5
-                    rounded-lg
-                    border
-                    p-2.5
-                    text-left
-                    transition-all
-                    duration-150
-                    last:mb-0
+                    flex h-8 w-8 shrink-0
+                    items-center justify-center
+                    rounded-lg transition-colors
 
-                    focus-visible:outline-none
-                    focus-visible:ring-2
-                    focus-visible:ring-slate-400
-                    focus-visible:ring-offset-1
-
-                    active:scale-[0.99]
+                    ${
+                      isAnswered
+                        ? "bg-green-50 text-green-600"
+                        : "bg-orange-50 text-orange-500"
+                    }
 
                     ${
                       isSelected
-                        ? `
-                          border-blue-500
-                          bg-blue-50
-                          shadow-sm
-                        `
-                        : `
-                          border-transparent
-                          hover:border-slate-200
-                          hover:bg-slate-50
-                        `
+                        ? isAnswered
+                          ? "bg-green-100"
+                          : "bg-orange-100"
+                        : ""
                     }
                   `}
                 >
-                  {/* Status icon */}
                   {isAnswered ? (
-                    <CheckCircle2
-                      className="
-                        h-5
-                        w-5
-                        shrink-0
-                        text-green-600
-                      "
-                    />
+                    <CheckCircle2 className="h-4 w-4" />
                   ) : (
-                    <CircleAlert
-                      className="
-                        h-5
-                        w-5
-                        shrink-0
-                        text-orange-500
-                      "
-                    />
+                    <CircleAlert className="h-4 w-4" />
                   )}
+                </div>
 
-                  {/* Question number */}
-                  <span
-                    className="
-                      min-w-0
-                      flex-1
-                      truncate
-                      text-sm
-                      font-semibold
-                      text-slate-900
-                      sm:text-base
-                    "
+                {/* Question number */}
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={`
+                      truncate text-xs font-bold
+                      ${
+                        isSelected
+                          ? "text-slate-950"
+                          : "text-slate-800"
+                      }
+                    `}
                   >
+                    Question{" "}
                     {mapping.questionNumber}
-                  </span>
+                  </p>
 
-                  {/* Status */}
-                  <Badge
-                    variant={
+                  <p className="mt-0.5 text-[9px] font-medium text-slate-400">
+                    {isAnswered
+                      ? "Answer available"
+                      : "No answer found"}
+                  </p>
+                </div>
+
+                {/* Status */}
+                <span
+                  className={`
+                    shrink-0 rounded-full
+                    px-2 py-1 text-[8px]
+                    font-bold uppercase
+                    tracking-wide
+
+                    ${
                       isAnswered
-                        ? "default"
-                        : "secondary"
+                        ? "bg-green-50 text-green-700"
+                        : "bg-orange-50 text-orange-600"
                     }
-                    className="
-                      shrink-0
-                      text-[10px]
-                      sm:text-xs
-                    "
-                  >
-                    <span className="hidden sm:inline">
-                      {isAnswered
-                        ? "Answered"
-                        : "Unanswered"}
-                    </span>
-
-                    <span className="sm:hidden">
-                      {isAnswered
-                        ? "Done"
-                        : "Pending"}
-                    </span>
-                  </Badge>
-                </button>
-              );
-            }
-          )
+                  `}
+                >
+                  {isAnswered
+                    ? "Done"
+                    : "Pending"}
+                </span>
+              </button>
+            );
+          })
         )}
       </div>
 
-      {/* =================================================
-          FOOTER SUMMARY
-          ================================================= */}
+      {/* =========================================
+          FOOTER
+      ========================================== */}
+      <div className="shrink-0 border-t border-slate-100 bg-white px-4 py-3.5 sm:px-5">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+            Assessment progress
+          </span>
 
-      <div
-        className="
-          shrink-0
-          border-t
-          bg-white
-          px-4
-          py-3
-          sm:p-4
-        "
-      >
-        {/* Progress bar */}
-        <div
-          className="
-            mb-2
-            h-1.5
-            w-full
-            overflow-hidden
-            rounded-full
-            bg-slate-100
-          "
-        >
+          <span className="text-[10px] font-bold text-slate-700">
+            {answeredCount}/{mappings.length}
+          </span>
+        </div>
+
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
           <div
-            className="
-              h-full
-              rounded-full
-              bg-green-500
-              transition-all
-              duration-300
-            "
+            className="h-full rounded-full bg-green-500 transition-all duration-300"
             style={{
               width:
                 mappings.length > 0
@@ -426,66 +281,16 @@ export default function QuestionSidebar({
           />
         </div>
 
-        <div
-          className="
-            flex
-            items-center
-            justify-between
-            gap-3
-            text-xs
-          "
-        >
-          <span
-            className="
-              text-muted-foreground
-            "
-          >
-            Assessment progress
+        <div className="mt-2 flex items-center justify-between text-[8px] font-medium text-slate-400">
+          <span>
+            {answeredCount} answered
           </span>
 
-          <span
-            className="
-              shrink-0
-              font-semibold
-              text-slate-800
-            "
-          >
-            {answeredCount}/
-            {mappings.length}
+          <span>
+            {unansweredCount} remaining
           </span>
         </div>
       </div>
     </aside>
-  );
-}
-
-/**
- * Small inline icon for the empty state.
- *
- * Kept local so we don't need another
- * dependency/import just for this icon.
- */
-function FileTextIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="
-        h-5
-        w-5
-        text-slate-500
-      "
-      aria-hidden="true"
-    >
-      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-      <path d="M14 2v6h6" />
-      <path d="M8 13h8" />
-      <path d="M8 17h6" />
-    </svg>
   );
 }

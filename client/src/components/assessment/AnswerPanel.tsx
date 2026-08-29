@@ -140,8 +140,8 @@ export default function AnswerPanel({
     <div
       className="
         min-w-0
-        space-y-5
-        pb-6
+        space-y-6
+        pb-8
       "
     >
       {/* =================================================
@@ -174,9 +174,10 @@ export default function AnswerPanel({
             className="
               mt-1
               truncate
-              text-xl
-              font-semibold
-              text-slate-900
+              text-2xl
+              font-bold
+              tracking-tight
+              text-slate-950
             "
           >
             {questionNumber}
@@ -250,13 +251,15 @@ export default function AnswerPanel({
         <span
           className="
             max-w-full
-            rounded-md
-            bg-slate-100
+            rounded-full
+            border
+            border-slate-200
+            bg-slate-50
             px-3
             py-1.5
             text-xs
             font-medium
-            text-slate-700
+            text-slate-600
           "
         >
           Match:{" "}
@@ -267,13 +270,15 @@ export default function AnswerPanel({
 
         <span
           className="
-            rounded-md
-            bg-slate-100
+            rounded-full
+            border
+            border-slate-200
+            bg-slate-50
             px-3
             py-1.5
             text-xs
             font-medium
-            text-slate-700
+            text-slate-600
           "
         >
           Confidence:{" "}
@@ -284,13 +289,15 @@ export default function AnswerPanel({
 
         <span
           className="
-            rounded-md
-            bg-slate-100
+            rounded-full
+            border
+            border-slate-200
+            bg-slate-50
             px-3
             py-1.5
             text-xs
             font-medium
-            text-slate-700
+            text-slate-600
           "
         >
           {regionCount}{" "}
@@ -322,11 +329,13 @@ export default function AnswerPanel({
               max-h-105
               overflow-y-auto
               overflow-x-hidden
-              rounded-xl
+              rounded-2xl
               border
-              bg-slate-50
-              p-4
-              sm:p-5
+              border-slate-200
+              bg-white
+              p-5
+              shadow-sm
+              sm:p-6
             "
           >
             <p
@@ -474,7 +483,7 @@ export default function AnswerPanel({
             className="
               h-full
               rounded-full
-              bg-slate-700
+              bg-orange-500
               transition-all
               duration-300
             "
@@ -515,7 +524,10 @@ export default function AnswerPanel({
             flex
             min-w-0
             flex-col
-            gap-3
+            gap-4
+            rounded-xl
+            bg-slate-50
+            p-4
             sm:flex-row
             sm:items-center
             sm:justify-between
@@ -565,7 +577,7 @@ export default function AnswerPanel({
           <Button
             type="button"
             size="sm"
-            className="w-full sm:w-auto"
+            className="w-full rounded-xl bg-orange-500 px-4 font-semibold text-white shadow-sm transition hover:bg-orange-600 sm:w-auto"
             onClick={
               generateGrading
             }
