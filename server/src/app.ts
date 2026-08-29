@@ -48,22 +48,14 @@ app.use(
         allowed?: boolean
       ) => void
     ) => {
+      // Allow requests without an Origin header.
       if (!origin) {
         callback(null, true);
         return;
       }
 
+      // Allow configured frontend origins.
       if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
-
-      // Allow Vercel deployment URLs for this project.
-      if (
-        /^https:\/\/veda-ai-assessment-[a-z0-9-]+-amit-sain\.vercel\.app$/i.test(
-          origin
-        )
-      ) {
         callback(null, true);
         return;
       }
@@ -92,7 +84,6 @@ app.use(
     ],
   })
 );
-
 /**
  * ==========================================
  * REQUEST BODY CONFIGURATION
